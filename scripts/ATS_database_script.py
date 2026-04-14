@@ -47,9 +47,9 @@ The change implementation document 'typically' has this structure
 - Benefits/Justification
 - Pre-Requisites and Applicability
 - Implementation which consists of
-- Technical Information: Ignore any details written here
-- Proview Information
-- Validation
+  - Technical Information: Ignore any details written here
+  - Proview Information
+  - Validation
 - Verification
 - versions (or versions.xml)
 
@@ -59,8 +59,9 @@ INSTRUCTIONS:
 3. Output MUST be valid JSON only. Do not include markdown code blocks (```json), comments, or explanations.
 4. If a specific field is missing in the document, use "N/A" for strings, null for objects, or [] for arrays.
 5. For "Validations" (which are phrased as questions), rewrite them as declarative sentences.
-6. For "Versions" (XML data), copy the content exactly as it appears, preserving all characters.
-7. The most important data are pre-requisites, validations, inventory data and versions (XML data).
+6. The most important data are pre-requisites, validations, job names, inventory data and versions (XML data).
+7. For "Inventory", it is usually in the form of 'TXID="AA", Name="Inventory_column_name", Value="value"'. The TXID data consists of strictly 2 alphabets.
+8. For "Versions" (XML data), break it down to "checksum", "packagename", timestamp", "maj", "min", "rel" and "bld". Use "N/A" if it does not exist.
 
 REQUIRED JSON STRUCTURE:
 {
@@ -85,13 +86,17 @@ REQUIRED JSON STRUCTURE:
             ],
             "verifications": [
                 {
-                    "header": "String: head (or subtitle) of the section",
                     "information": "String: Summary of key details (registries, file checks)",
                     "inventory_data": [
-                        "String: Key-value pairs like 'key = value'"
+                        "String: 'TXID=txid, Name=name, Value=value'"
                     ],
                     "versions": [
-                        "String: Raw XML version data (do not summarize)"
+                        {
+                            "packagename": "String: the value inside <PACKAGENAME>, else 'N/A'",
+                            "checksum": "String: the checksum inside <CHECKSUM>, else 'N/A'",
+                            "timestamp": "String: the value inside <TIMESTAMP>, else 'N/A'",
+                            "version": "String: MAJ.MIN.REL.BLD format, else 'N/A'",
+                        }
                     ]
                 }
             ]
@@ -111,6 +116,11 @@ IMPORTANT: Ensure the output is strictly parseable JSON."""
     for filename in os.listdir(os.path.join(FOLDER_NAME)):
         
         logger.log(f"Currently at {filename}")
+        
+        if ("change" not in filename.lower()):
+            logger.log(f"{filename} does not have the keyword 'change'")
+            logger.log(f"Skipping {filename}")
+            continue
         
         # construct the payload
         payload = {
@@ -185,11 +195,6 @@ IMPORTANT: Ensure the output is strictly parseable JSON."""
             payload.get("messages")[0].get("content").append(img_payload)
             
         logger.log("Converted PDF to Images successfully")
-            
-        # DEBUG: dump the payload
-        # with open(os.path.join(os.curdir, "outputs", "test.json"), "w") as f:
-        #     json.dump(payload, f, indent=2)
-        
         logger.log("Sending prompt posted to URL")
 
         # create the request
@@ -210,22 +215,15 @@ IMPORTANT: Ensure the output is strictly parseable JSON."""
             
             # get response in JSON format
             data = response.json()
-
-            # get the reasoning content/thinking process
-            # print("Reasoning Content")
-            # print(data['choices'][0]['message']['reasoning_content'])
             
             # get the actual content
-            # print("---")
-            # print("Content")
             content = data['choices'][0]['message']['content']
             try:
                 json_content = json.loads(content)
-                # print(json_content)
                 output_json[filename] = json_content # add to overall json output
                 
                 # write to the file
-                with open(os.path.join("outputs", "output.json"), "w") as fp:
+                with open(os.path.join("outputs", f"{filename}.json"), "w") as fp:
                     json.dump(output_json, fp)
                 logger.log("Write to file successful")
             
@@ -237,6 +235,5 @@ IMPORTANT: Ensure the output is strictly parseable JSON."""
                     f.write(content)
             
             finally:
-                # print("Completed!")
                 response.close()
             
