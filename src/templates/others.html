@@ -53,7 +53,7 @@
                 align-items: center;
                 margin: 20px 0px 20px 0px;
             ">
-                <div class="buttons" style="height: 90%; overflow-y: scroll;"></div>
+                <div class="buttons" style="height: 90%; overflow-y: scroll; display: flex; flex-direction: column; gap: 5%;"></div>
 
                 <div class="clear-button" style="margin: 10px 0 10px 0;">
                     <button type="button" id="clearButton" style="width: 150px;">Clear</button>
@@ -69,7 +69,7 @@
             ">
 
             <!-- the events of each script -->
-            <div class="window-content" style="margin: 20px;">
+            <div class="window-content" style="margin: 20px; width: 75%;">
                 <table class="table-head">
                     <thead>
                         <tr>
@@ -79,7 +79,7 @@
                     </thead>
                 </table>
 
-                <table class="table-body">
+                <table class="table-body" style="display: block; overflow-y: scroll; height: 90%;">
                     <tbody id="table-content"></tbody>
                 </table>
             </div>
