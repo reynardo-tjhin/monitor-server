@@ -56,7 +56,7 @@
         .controls-buttons {
             margin-bottom: 10px;
             overflow-y: scroll;
-            height: 450px;
+            height: 420px;
         }
 
         .control {
@@ -166,6 +166,10 @@
             </div>
 
             <div class="controls-content">
+                <div class="button">
+                    <button type="click" onclick="window.location.href='/others'">Button to Others</button>
+                </div>
+
                 <div class="controls-buttons">
                     {% for script in scripts %}
                     <div class="control">
@@ -238,7 +242,7 @@
                 if (!response.ok) { // error with the script ID
                     span.textContent = "🔴";
                 }
-                
+
                 const result = await response.json();
                 if (result.status === 0) {
                     span.textContent = "🟢"; // script is running
@@ -247,7 +251,7 @@
                 }
             });
         }
-        setInterval(pollScriptIndicator, 500); // keep refreshing every 500ms
+        setInterval(pollScriptIndicator, 5000); // keep refreshing every 500ms
 
 
         function renderEvents(events) {

@@ -49,6 +49,39 @@ def create_app(module_parent_path: pathlib.Path = None, module_name: str = None)
     
     
     
+    # others page
+    @app.route("/others")
+    def others() -> str:
+        """If there are any scripts running that send events to redis
+        This page will show the events of scripts that are not added by
+        the Script Manager"""
+        return render_template("others.html")
+    
+    
+    
+    # for other scripts
+    @app.route("/other-scripts", methods=["GET"])
+    def find_other_scripts() -> Response:
+        
+        conn = db.get_db()
+        
+        # get the other scripts' id
+        other_scripts_id = []
+        for key in conn.keys():
+            
+            # built-in scripts will have "{script_id}" keys
+            # other scripts that are not built-in will have
+            # "others:{script_id}"
+            if "others" in key.lower():
+                other_scripts_id.append(key)
+        
+        return jsonify({
+            "status": "ok",
+            "message": other_scripts_id,
+        })
+    
+    
+    
     @app.route("/start-worker/<string:script_id>", methods=["POST"])
     def start_worker(script_id: str) -> Response:
         """Starting the script by creating a process using the Script manager.
@@ -185,12 +218,17 @@ def create_app(module_parent_path: pathlib.Path = None, module_name: str = None)
         start = 0
         if (request.args.get("start") is not None):
             start = int(request.args.get("start"))
+            
+        # get the type parameter
+        type = "script" # Literal['script', 'others']
+        if (request.args.get("type") is not None):
+            type = request.args.get("type")
         
         # get all the messages from the start to the end
         # the messages are stored from the oldest (0th index) to the most recent ((n-1)th index)
         conn = db.get_db()
-        items = conn.lrange("script:"+script_id, start=start, end=-1)
-        
+        items = conn.lrange(f"{type}:"+script_id, start=start, end=-1)
+
         return jsonify({
             "events": items,
             "end": start+len(items),

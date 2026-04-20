@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Others</title>
+
+    <style>
+        body {
+            background: linear-gradient(to bottom, #219ccd, #97dde8);
+            margin: 0px;
+            height: 100%;
+        }
+
+        .content {
+            margin: 0px 50px 0px 50px;
+            height: 100vh;
+        }
+
+        h1 {
+            margin-block-start: 0px;
+            padding-top: 0.67em;
+        }
+
+        .window {
+            display: flex;
+            width: 80%;
+            height: 60%;
+            background-color: #EBEBEE;
+        }
+
+        .id {
+            width: 20%;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="content">
+        <h1>Other Scripts</h1>
+
+        <div class="home" style="margin-bottom: 20px;">
+            <button type="button" onclick="window.location.href='/'">
+                < Back to Home</button>
+        </div>
+
+        <div class="window">
+            <!-- buttons of script IDs -->
+            <div class="id" style="
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                margin: 20px 0px 20px 0px;
+            ">
+                <div class="buttons" style="height: 90%; overflow-y: scroll;"></div>
+
+                <div class="clear-button" style="margin: 10px 0 10px 0;">
+                    <button type="button" id="clearButton" style="width: 150px;">Clear</button>
+                </div>
+            </div>
+
+            <!-- to separate the IDs and the events/messages/logs of the scripts -->
+            <hr style="
+                margin-block-start: 0;
+                margin-block-end: 0;
+                margin-inline-start: 0;
+                margin-inline-end: 0;
+            ">
+
+            <!-- the events of each script -->
+            <div class="window-content" style="margin: 20px;">
+                <table class="table-head">
+                    <thead>
+                        <tr>
+                            <th style="width: 200px;">Timestamp</th>
+                            <th style="width: 510px;">Event</th>
+                        </tr>
+                    </thead>
+                </table>
+
+                <table class="table-body">
+                    <tbody id="table-content"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function renderEvents(events) {
+            const fragment = document.createDocumentFragment();
+
+            events.forEach((event) => {
+                const [timestamp, log] = event.split("|");
+
+                const tr = document.createElement("tr");
+
+                const td1 = document.createElement("td");
+                td1.textContent = timestamp;
+                td1.style = "width: 200px;"
+
+                const td2 = document.createElement("td");
+                td2.textContent = log;
+
+                tr.appendChild(td1);
+                tr.appendChild(td2);
+                fragment.prepend(tr);
+            });
+            document.getElementById("table-content").prepend(fragment);
+        }
+
+
+
+        let intervalId = null;
+        let state = "-1";
+        let start = 0;
+        async function poll() {
+            // no need to poll if UI state is empty
+            if (state === "-1") return;
+
+            // get the events based on the script id
+            const response = await fetch("/poll/" + state + "?start=" + start + "&type=others");
+            const result = await response.json();
+
+            start = result.end;
+            renderEvents(result.events);
+        }
+
+
+
+        async function startPolling() {
+
+            poll(); // initial poll
+
+            clearInterval(intervalId); // reset if exists
+            intervalId = setInterval(poll, 2000);
+        }
+
+
+
+        async function getOtherScripts() {
+            const response = await fetch("/other-scripts");
+            const result = await response.json();
+
+            const fragment = document.createDocumentFragment();
+            result.message.forEach((element, index) => {
+
+                const scriptId = element.split(":")[1]; // split the message by ":"
+                const truncatedScriptId = scriptId.slice(0, 16) + "...";
+
+                const newButton = document.createElement("button");
+                newButton.textContent = truncatedScriptId;
+                newButton.type = "button";
+                newButton.style = "width: 150px;";
+
+                newButton.addEventListener('click', async function (event) {
+                    event.preventDefault();
+
+                    if (state !== scriptId) {
+
+                        // clear whatever is existing on the UI
+                        document.getElementById("table-content").textContent = "";
+
+                        state = scriptId;
+                        start = 0;
+
+                        // get the events based on the script id
+                        startPolling();
+                    }
+                });
+
+                fragment.appendChild(newButton);
+            });
+            document.querySelector(".buttons").appendChild(fragment);
+        }
+        
+
+        
+        // define clear button
+        document.getElementById("clearButton").addEventListener("click", async function (event) {
+            event.preventDefault();
+            document.getElementById("table-content").textContent = "";
+            state = "-1";
+            start = 0;
+
+            clearInterval(intervalId);
+            intervalId = null;
+        });
+
+
+
+        // run this function at start-up
+        getOtherScripts();
+    </script>
+</body>
+
+</html>
